@@ -1,98 +1,128 @@
 <template>
-  <div
-    class="background h-screen w-full bg-cover before:absolute before:h-full before:w-full before:bg-black/10 before:content-['']"
-  >
-    <div
-      class="relative left-1/2 top-1/2 w-[56vh] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white/75 backdrop-blur-lg"
-    >
-      <ProgressBar 
-        :value="progressValue"  
-        :showValue="false"
-        class="custom-progress-bar"
-      />
-      <p class="my-12 text-center text-3xl text-[var(--p-sky-500)]">重设密码</p>
-      <form @submit.prevent="submitForm" class="space-y-8 px-12 pb-12">
-        <FloatLabel>
-          <InputText
-            class="w-full"
-            :style="{ boxShadow: 'none' }"
-            id="username"
-            v-model="username"
-          />
-          <label for="username">用户名</label>
-        </FloatLabel>
+  <AuthLayout title="重设密码">
+    <template #header>
+      <div class="h-2 bg-[var(--p-sky-500)] transition-all" :class="headerClassList" />
+    </template>
 
-        <div class="flex items-center space-x-4">
-          <FloatLabel class="flex-1">
-            <InputText
-              class="w-full"
-              id="email"
-              v-model="email"
-            />
-            <label for="email">邮箱</label>
-          </FloatLabel>
-          <Button 
-              label="Send Code"
-              @click="sendCode"
-            >
-            发送验证码
+    <!-- 发送验证码 -->
+    <form @submit.prevent="sendCode" class="space-y-8 px-12 pb-12" v-show="state === 'send'">
+      <FloatLabel>
+        <InputText class="w-full" :style="{ boxShadow: 'none' }" id="username" v-model="username" />
+        <label for="username">用户名</label>
+      </FloatLabel>
+
+      <div>
+        <FloatLabel class="flex-1">
+          <InputText class="w-full" :style="{ boxShadow: 'none' }" id="email" v-model="email" />
+          <label for="email">邮箱</label>
+        </FloatLabel>
+        <div class="flex w-full flex-row justify-end">
+          <Button label="Reset Password" class="!px-0" link @click="router.push('/login')">
+            返回登录
           </Button>
         </div>
+      </div>
+      <Button type="submit" label="SendCode" class="w-full">发送验证码</Button>
+    </form>
 
-        <div class="card flex justify-center">
-          <InputOtp v-model="verification" style="display: flex; justify-content: space-between;">
+    <!-- 验证验证码 -->
+    <form
+      @submit.prevent="checkVerifyCode"
+      class="space-y-8 px-12 pb-12"
+      v-show="state === 'check'"
+    >
+      <label for="code" class="pl-[10px] text-[var(--p-floatlabel-color)]"
+        >输入发送至邮箱的验证码
+      </label>
+      <div>
+        <div class="flex justify-center">
+          <InputOtp v-model="verifyCode" id="code">
             <template #default="{ attrs, events }">
-              <input type="text" v-bind="attrs" v-on="events" class="custom-otp-input" />
+              <input type="text" v-bind="attrs" v-on="events" class="verify-code-input" />
             </template>
           </InputOtp>
         </div>
-        <Button type="submit" label="submit" class="w-full">确认</Button>
-      </form>
-    </div>
+        <div class="flex w-full flex-row justify-end pt-4">
+          <span class="py-[var(--p-button-padding-y)] text-[var(--p-floatlabel-color)]"
+            >没有收到验证码？
+          </span>
+          <Button label="Reset Password" class="!px-0" link @click="sendCode">重新发送</Button>
+        </div>
+      </div>
+      <Button type="submit" label="CheckVerifyCode" class="w-full">确认</Button>
+    </form>
 
-    <div class="absolute bottom-0 right-0 m-2 px-1 text-white/75">
-      <p>Copyright © {{ currentYear }} MisakaNetwork Lab</p>
-      <p class="text-end">
-        Illustration by artist
-        <a href="https://www.pixiv.net/users/33886650" class="text-[var(--p-sky-100)]">いちご飴</a>
-      </p>
-    </div>
-  </div>
+    <!-- 重设密码 -->
+    <form @submit.prevent="resetPassword" class="space-y-8 px-12 pb-12" v-show="state === 'reset'">
+      <FloatLabel>
+        <InputText
+          class="w-full"
+          :style="{ boxShadow: 'none' }"
+          id="new-password"
+          v-model="username"
+        />
+        <label for="new-password">输入新密码</label>
+      </FloatLabel>
+      <FloatLabel class="flex-1">
+        <InputText
+          class="w-full"
+          :style="{ boxShadow: 'none' }"
+          id="repeat-password"
+          v-model="email"
+        />
+        <label for="repeat-password">重复新密码</label>
+      </FloatLabel>
+      <Button type="submit" label="ResetPassword" class="!mt-12 w-full">重设密码</Button>
+    </form>
+  </AuthLayout>
 </template>
 
 <script lang="ts" setup>
 import FloatLabel from 'primevue/floatlabel'
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
 import InputOtp from 'primevue/inputOtp'
-import ProgressBar from 'primevue/progressbar';
+
+import AuthLayout from '@/layouts/AuthLayout.vue'
+
 import { ref, watch } from 'vue'
+import router from '@/router'
 
-const currentYear = ref(new Date().getFullYear())
-const username = ref<string>('')   
-const email = ref<string>('')      
-const verification = ref<string | null>('')  
-const progressValue = ref<number>(0) 
+const state = ref<'send' | 'check' | 'reset'>('send')
+const headerClassList = ref('w-1/3 rounded-tl-lg')
 
-watch([username, email], () => {
-  if (username.value !== '' && email.value !== '') {
-    progressValue.value = 33.33; 
-  } else {
-    progressValue.value = 0; 
+const username = ref<string>('')
+const email = ref<string>('')
+
+const verifyCode = ref<string>('')
+
+watch(state, () => {
+  switch (state.value) {
+    case 'send': {
+      headerClassList.value = 'w-1/3 rounded-tl-lg'
+      break
+    }
+    case 'check': {
+      headerClassList.value = 'w-2/3 rounded-tl-lg'
+      break
+    }
+    case 'reset': {
+      headerClassList.value = 'w-full rounded-t-lg'
+      break
+    }
   }
 })
 
-function sendCode() {
-  if (username.value !== '' && email.value !== '') {  
-    progressValue.value = 66.66; 
-  }
+const sendCode = () => {
+  state.value = 'check'
 }
 
+const checkVerifyCode = () => {
+  state.value = 'reset'
+}
 
-function submitForm() {
-  if (verification.value) {
-    progressValue.value = 100;   
-  }
+const resetPassword = () => {
+  router.push('/login')
 }
 </script>
 
@@ -101,26 +131,8 @@ function submitForm() {
   background-image: url('@/assets/background.webp');
 }
 
-.custom-progress-bar  {
-  border-radius: 8px 8px 0 0 !important; /* 设置圆角 */
-  height: 8px !important; /* 设置高度 */
-}
-
-
-.custom-otp-input {
-  width: 18%;
-  font-size: 25px;
-  margin: 0 10px 0 10px;
-  border: 0 none;
-  appearance: none;
-  text-align: center;
-  transition: all 0.2s;
-  background: transparent;
-  border-bottom: 2px solid var(--p-inputtext-border-color);
-}
-
-.custom-otp-input:focus {
-  outline: 0 none;
-  border-bottom-color: var(--p-primary-color);
+.verify-code-input {
+  @apply mx-2 w-[18%] appearance-none border-0 border-b-2 border-[var(--p-inputtext-border-color)] bg-transparent text-center text-[25px] outline-none transition-all;
+  @apply focus:border-b-2 focus:border-b-[var(--p-primary-color)];
 }
 </style>

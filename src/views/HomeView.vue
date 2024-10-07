@@ -1,9 +1,9 @@
-<script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
-</script>
-
 <template>
-  <main>
-    <TheWelcome />
+  <main class="h-screen w-full bg-[var(--p-gray-100)]">
+    <MenuBar />
   </main>
 </template>
+
+<script lang="ts" setup>
+import MenuBar from '@/components/MenuBar.vue'
+</script>
