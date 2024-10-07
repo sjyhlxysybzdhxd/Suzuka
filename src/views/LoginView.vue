@@ -29,7 +29,13 @@
             <label for="password">密码</label>
           </FloatLabel>
           <div class="flex w-full flex-row justify-end">
-            <Button label="Reset Password" class="!px-0" link>重设密码</Button>
+            <Button 
+              label="Reset Password" 
+              class="!px-0" 
+              link
+              @click="ToResetPassword"
+            >
+            重设密码</Button>
           </div>
         </div>
         <Button type="submit" label="submit" class="w-full">登录</Button>
@@ -49,11 +55,14 @@ import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { ref } from 'vue'
+import router from '@/router';
 
 const currentYear = ref(new Date().getFullYear())
 const username = ref<string>('')
 const password = ref<string>('')
-
+const ToResetPassword = ()=>{
+  router.push('user/reset-password')
+}
 </script>
 <style lang="postcss">
 .background {
